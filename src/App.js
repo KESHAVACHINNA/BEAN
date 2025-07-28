@@ -1,166 +1,66 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from 'firebase/firestore';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import Markdown from 'react-markdown';
-import './App.css';
+import React, { useState } from "react";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const firebaseConfig = JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG || '{}');
-const appId = process.env.REACT_APP_APP_ID || 'default-app';
-const initialAuthToken = process.env.REACT_APP_INITIAL_AUTH_TOKEN || null;
-const apiKey = process.env.REACT_APP_GEMINI_API_KEY || '';
+const App = () => {
+  const [input, setInput] = useState("");
+  const [chat, setChat] = useState([]);
+  const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-const genAI = new GoogleGenerativeAI(apiKey);
-
-function App() {
-  const [prompt, setPrompt] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [userId, setUserId] = useState(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  const [selectedImageFile, setSelectedImageFile] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const messagesContainerRef = useRef(null);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUserId(user.uid);
-        setIsAuthReady(true);
-      } else {
-        setIsAuthReady(false);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!isAuthReady) return;
-    const signIn = async () => {
-      if (initialAuthToken) {
-        await signInWithCustomToken(auth, initialAuthToken);
-      } else {
-        await signInAnonymously(auth);
-      }
-    };
-    signIn();
-  }, [isAuthReady]);
-
-  useEffect(() => {
-    if (!userId) return;
-    const messagesRef = collection(db, `artifacts/${appId}/users/${userId}/messages`);
-    const q = query(messagesRef, orderBy('timestamp'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const messagesData = snapshot.docs.map(doc => doc.data());
-      setMessages(messagesData);
-    });
-    return () => unsubscribe();
-  }, [userId]);
-
-  useEffect(() => {
-    messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages]);
-
-  const saveMessageToFirestore = async (msg) => {
-    if (!userId) return;
-    const messagesRef = collection(db, `artifacts/${appId}/users/${userId}/messages`);
-    await addDoc(messagesRef, {
-      ...msg,
-      timestamp: serverTimestamp()
-    });
-  };
-
-  const handleSendPrompt = async () => {
-    if (!prompt.trim()) return;
-    const userMsg = { role: 'user', text: prompt };
-    setMessages(prev => [...prev, userMsg]);
-    await saveMessageToFirestore(userMsg);
-    setPrompt('');
-    setIsLoading(true);
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    const userMessage = { role: "user", content: input };
+    setChat([...chat, userMessage]);
 
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = await response.text();
-      const botMsg = { role: 'model', text };
-      setMessages(prev => [...prev, botMsg]);
-      await saveMessageToFirestore(botMsg);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setIsLoading(false);
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const result = await model.generateContent(input);
+      const response = result.response.text();
+      setChat([...chat, userMessage, { role: "ai", content: response }]);
+    } catch (err) {
+      setChat([...chat, userMessage, { role: "ai", content: "⚠️ Error from Gemini API." }]);
     }
-  };
 
-  const analyzeUploadedImage = async (base64Data) => {
-    if (!base64Data) return;
-    const imageMsg = { role: 'user', text: 'Uploaded an image for analysis.' };
-    setMessages(prev => [...prev, imageMsg]);
-    await saveMessageToFirestore(imageMsg);
-    setIsLoading(true);
-
-    try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-pro-vision' });
-      const imageParts = [
-        {
-          inlineData: {
-            data: base64Data.split(',')[1],
-            mimeType: 'image/jpeg',
-          },
-        },
-      ];
-      const result = await model.generateContent(["Describe this image in detail", ...imageParts]);
-      const response = await result.response;
-      const text = await response.text();
-      const botMsg = { role: 'model', text };
-      setMessages(prev => [...prev, botMsg]);
-      await saveMessageToFirestore(botMsg);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    setSelectedImageFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64Data = reader.result;
-      analyzeUploadedImage(base64Data);
-    };
-    reader.readAsDataURL(file);
+    setInput("");
   };
 
   return (
-    <div className="app-container">
-      <h1>Bean Assistant</h1>
-      <div className="messages-container" ref={messagesContainerRef}>
-        {messages.map((msg, idx) => (
-          <div key={idx} className={`message ${msg.role}`}>
-            <Markdown>{msg.text}</Markdown>
-          </div>
-        ))}
-        {isLoading && <div className="message model">Typing...</div>}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white flex flex-col items-center p-6">
+      <h1 className="text-4xl font-bold text-purple-400 mb-6 animate-bounce">👾 Bean – Your AI Assistant</h1>
+
+      <div className="w-full max-w-xl bg-gray-800 rounded-2xl p-6 shadow-lg flex flex-col gap-4">
+        <div className="h-96 overflow-y-auto space-y-4 pr-2">
+          {chat.map((msg, i) => (
+            <div
+              key={i}
+              className={`rounded-xl px-4 py-2 max-w-[80%] ${
+                msg.role === "user" ? "ml-auto bg-purple-600" : "mr-auto bg-gray-700"
+              }`}
+            >
+              {msg.content}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          <input
+            className="flex-1 p-3 rounded-xl bg-gray-700 text-white outline-none"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Ask Bean something..."
+          />
+          <button
+            onClick={handleSend}
+            className="bg-purple-500 hover:bg-purple-600 px-4 py-2 rounded-xl transition"
+          >
+            Send
+          </button>
+        </div>
       </div>
-      <div className="input-container">
-        <input
-          type="text"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Ask me anything..."
-        />
-        <button onClick={handleSendPrompt}>Send</button>
-        <input type="file" accept="image/*" onChange={handleImageUpload} />
-      </div>
+
+      <p className="mt-4 text-sm text-gray-500">Powered by Gemini | Built with 💜 by Keshava</p>
     </div>
   );
-}
+};
 
 export default App;
