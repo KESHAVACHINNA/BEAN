@@ -1,9 +1,9 @@
 import streamlit as st
-import openai # Or whatever AI library you use
+import openai  # Or whatever AI library you use
 
 # --- Page Configuration ---
 st.set_page_config(page_title="Bean AI Clone", layout="wide")
-st.title(" Bean AI Assistant (Streamlit Version)")
+st.title("Bean AI Assistant (Streamlit Version)")
 
 # --- Main App Logic ---
 
@@ -25,7 +25,7 @@ if st.button("Generate Image"):
             # response = openai.Image.create(prompt=prompt, n=1, size="512x512")
             # image_url = response['data'][0]['url']
             # st.image(image_url, caption=prompt)
-            st.image("https://via.placeholder.com/512", caption=f"Generated image for: {prompt}") # Placeholder
+            st.image("https://via.placeholder.com/512", caption=f"Generated image for: {prompt}")  # Placeholder
     else:
         st.warning("Please enter a prompt.")
 
@@ -40,7 +40,8 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # Get user input
-if chat_prompt := st.chat_input("What is up?"):
+chat_prompt = st.chat_input("What is up?")
+if chat_prompt:
     # Add user message to history and display it
     st.session_state.messages.append({"role": "user", "content": chat_prompt})
     with st.chat_message("user"):
@@ -49,7 +50,7 @@ if chat_prompt := st.chat_input("What is up?"):
     # --- Get AI Response ---
     with st.chat_message("assistant"):
         # response = ... your AI chat logic here ...
-        response = f"Echo: {chat_prompt}" # Placeholder response
+        response = f"Echo: {chat_prompt}"  # Placeholder response
         st.markdown(response)
 
     # Add AI response to history
