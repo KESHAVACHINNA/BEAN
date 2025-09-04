@@ -3,7 +3,7 @@ fastapi==0.111.0
 uvicorn==0.23.2
 
 # OpenAI API and requests
-openai
+openai==0.28.1
 requests==2.32.0
 
 # Multimodal / embeddings
