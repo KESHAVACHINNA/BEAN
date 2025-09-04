@@ -1,0 +1,28 @@
+# Web framework
+fastapi==0.111.0
+uvicorn==0.23.2
+
+# OpenAI API
+openai==1.31.0
+requests==2.32.0
+
+# Multimodal / embeddings
+torch==2.1.0
+torchvision==0.16.1
+sentence-transformers==2.2.2
+transformers==4.35.0
+Pillow==10.1.0
+faiss-cpu==1.7.4
+
+# PDF / file analysis
+pdfplumber==0.10.1
+python-docx==0.8.12
+pandas==2.1.1
+
+# UI
+streamlit==1.26.0
+gradio==3.48.0
+
+# Environment / utils
+python-dotenv==1.0.1
+numpy==1.26.0
