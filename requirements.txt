@@ -11,7 +11,7 @@ torch==2.8.0
 torchvision==0.23.0
 sentence-transformers==2.2.2
 transformers==4.35.0
-Pillow==10.1.0
+Pillow==9.5.0
 faiss-cpu==1.7.4
 
 # PDF / file analysis
