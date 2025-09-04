@@ -2,7 +2,7 @@
 fastapi==0.111.0
 uvicorn==0.23.2
 
-# OpenAI API
+# OpenAI API and requests
 openai
 requests==2.32.0
 
@@ -23,6 +23,6 @@ pandas==2.1.1
 streamlit==1.26.0
 gradio==3.48.0
 
-# Environment / utils
+# Environment / utilities
 python-dotenv==1.0.1
 numpy==1.26.0
